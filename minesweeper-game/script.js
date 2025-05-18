@@ -10,6 +10,9 @@ let firstClick = true; // Track if it's the first click
 
 // Initialize the game
 function initGame() {
+    gameOver = false;        // <-- Reset game over flag
+    firstClick = true;       // <-- Reset first click flag
+    revealedCount = 0;       // <-- Reset revealed count
     document.getElementById('win-message').style.display = 'none';
     document.getElementById('win-message').style.pointerEvents = 'none';
     document.getElementById('game-over-message').style.display = 'none';
