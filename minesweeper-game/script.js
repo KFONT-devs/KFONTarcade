@@ -84,7 +84,22 @@ function renderBoard() {
             cell.dataset.row = r;
             cell.dataset.col = c;
             cell.addEventListener('click', handleCellClick);
-            cell.addEventListener('contextmenu', handleCellRightClick); // Add right-click event
+            cell.addEventListener('contextmenu', handleCellRightClick);
+
+            // Touch support for flagging (long press)
+            let touchTimer = null;
+            cell.addEventListener('touchstart', function (e) {
+                touchTimer = setTimeout(() => {
+                    handleCellFlagTouch(e, r, c);
+                }, 500); // 500ms for long press
+            });
+            cell.addEventListener('touchend', function () {
+                clearTimeout(touchTimer);
+            });
+            cell.addEventListener('touchmove', function () {
+                clearTimeout(touchTimer);
+            });
+
             if (board[r][c].isRevealed) {
                 cell.classList.add('revealed');
                 if (board[r][c].isMine) {
@@ -99,6 +114,15 @@ function renderBoard() {
         }
         gameBoard.appendChild(row);
     }
+}
+
+// Touch handler for flagging on long press
+function handleCellFlagTouch(event, row, col) {
+    event.preventDefault();
+    if (gameOver) return;
+    if (board[row][col].isRevealed) return;
+    board[row][col].isFlagged = !board[row][col].isFlagged;
+    renderBoard();
 }
 
 // Handle cell click events
