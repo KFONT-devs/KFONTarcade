@@ -543,27 +543,26 @@ function handleHit(x, y) {
     const obj = beatmap[currentIndex];
     if (!obj) return;
     const dt = obj.time - now;
-    let approach = getApproach(dt);
     const cx = obj.x * canvas.width / GAME_WIDTH;
     const cy = obj.y * canvas.height / GAME_HEIGHT;
     const dist = Math.hypot(x - cx, y - cy);
 
-    // Only allow hit when approach circle is visually at the same radius as the inner circle
-    if (Math.abs(approach - 1) < 0.12 && dist < HIT_CIRCLE_RADIUS * canvas.width / GAME_WIDTH) {
-        // Judgement based on timing
+    // Only allow hit if within hit window and inside the circle
+    if (Math.abs(dt) <= HIT_WINDOW && dist < HIT_CIRCLE_RADIUS * canvas.width / GAME_WIDTH) {
+        // Make the timing windows for 50/150/300 easier
         let absDt = Math.abs(dt);
         let scoreText = '';
         let scoreColor = '';
         let addScore = 0;
-        if (absDt <= 50) {
+        if (absDt <= 100) { // was 50
             scoreText = '300';
             scoreColor = '#00eaff';
             addScore = 300;
-        } else if (absDt <= 100) {
+        } else if (absDt <= 180) { // was 100
             scoreText = '150';
             scoreColor = '#66ff66';
             addScore = 150;
-        } else if (absDt <= 200) {
+        } else if (absDt <= 300) { // was 200
             scoreText = '50';
             scoreColor = '#ffe066';
             addScore = 50;
