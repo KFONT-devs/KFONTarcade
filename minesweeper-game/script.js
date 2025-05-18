@@ -177,9 +177,31 @@ function revealNeighbors(row, col) {
 // Check for win condition
 function checkWinCondition() {
     if (revealedCount === rows * cols - minesCount) {
-        alert('Congratulations! You won the game.');
         gameOver = true;
+        triggerWinAnimation();
     }
+}
+
+// Add this function at the end of your script.js
+function triggerWinAnimation() {
+    const gameBoard = document.getElementById('game-board');
+    gameBoard.classList.add('blur');
+
+    setTimeout(() => {
+        document.getElementById('win-message').style.display = 'block';
+        // Add click handler for PLAY AGAIN
+        const playAgain = document.getElementById('play-again');
+        if (playAgain) {
+            playAgain.onclick = function() {
+                document.getElementById('win-message').style.display = 'none';
+                gameBoard.classList.remove('blur');
+                firstClick = true;
+                revealedCount = 0;
+                gameOver = false;
+                initGame();
+            };
+        }
+    }, 600);
 }
 
 // Add right-click handler for flagging
@@ -200,6 +222,9 @@ initGame();
 
 // Add this new function at the end of your script.js
 function triggerGameOverAnimation() {
+    const gameBoard = document.getElementById('game-board');
+    gameBoard.classList.add('blur');
+
     const cells = document.querySelectorAll('.cell');
     cells.forEach((cell, i) => {
         setTimeout(() => {
@@ -207,8 +232,20 @@ function triggerGameOverAnimation() {
         }, Math.random() * 400);
     });
 
-    // Show the message after the animation
     setTimeout(() => {
         document.getElementById('game-over-message').style.display = 'block';
+        // Add click handler for INSERT COIN
+        const insertCoin = document.getElementById('insert-coin');
+        if (insertCoin) {
+            insertCoin.onclick = function() {
+                // Hide message, unblur, reset game
+                document.getElementById('game-over-message').style.display = 'none';
+                gameBoard.classList.remove('blur');
+                firstClick = true;
+                revealedCount = 0;
+                gameOver = false;
+                initGame();
+            };
+        }
     }, 900);
 }
