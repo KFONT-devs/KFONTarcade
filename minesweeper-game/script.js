@@ -10,6 +10,8 @@ let firstClick = true; // Track if it's the first click
 
 // Initialize the game
 function initGame() {
+    document.getElementById('win-message').style.display = 'none'; // Hide win popup
+    document.getElementById('game-over-message').style.display = 'none'; // Also hide game over popup just in case
     board = createBoard();
     placeMines();
     calculateNumbers();
@@ -278,3 +280,18 @@ document.getElementById('start-btn').addEventListener('click', getSettingsAndSta
 
 // Initialize the game on page load
 window.addEventListener('DOMContentLoaded', getSettingsAndStart);
+
+// Set up PLAY AGAIN button once
+window.addEventListener('DOMContentLoaded', () => {
+    const playAgain = document.getElementById('play-again');
+    if (playAgain) {
+        playAgain.onclick = function() {
+            document.getElementById('win-message').style.display = 'none';
+            document.getElementById('game-board').classList.remove('blur');
+            firstClick = true;
+            revealedCount = 0;
+            gameOver = false;
+            initGame();
+        };
+    }
+});
