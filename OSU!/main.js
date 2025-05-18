@@ -49,6 +49,9 @@ let running = false;
 let combo = 0;
 let maxCombo = 0;
 
+// Add a variable to store miss feedback
+let missFeedback = { show: false, x: 0, y: 0, time: 0 };
+
 function resizeCanvas() {
     // Responsive canvas
     const ratio = GAME_WIDTH / GAME_HEIGHT;
@@ -259,6 +262,7 @@ function gameLoop() {
     if (!running || paused) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawScore();
+    drawMissFeedback();
     const now = getNow();
     let foundActive = false;
     // Draw normal hit circles only
@@ -266,8 +270,17 @@ function gameLoop() {
         const obj = beatmap[i];
         const dt = obj.time - now;
         if (dt < -HIT_WINDOW) {
+            // Missed by time out: show feedback and skip to next beat
+            const cx = obj.x * canvas.width / GAME_WIDTH;
+            const cy = obj.y * canvas.height / GAME_HEIGHT;
+            missFeedback = {
+                show: true,
+                x: cx,
+                y: cy,
+                time: performance.now()
+            };
             currentIndex++;
-            combo = 0; // Reset combo on miss
+            combo = 0;
             continue;
         }
         if (dt > 2000) break;
@@ -299,7 +312,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Update handleHit to manage combo
+// Update handleHit to manage combo and show miss feedback
 function handleHit(x, y) {
     if (!running) return;
     const now = getNow();
@@ -318,10 +331,47 @@ function handleHit(x, y) {
             if (combo > maxCombo) maxCombo = combo;
             beatmap.splice(currentIndex, 1);
         } else {
+            // Miss: show feedback and skip to next beat
+            missFeedback = {
+                show: true,
+                x: cx,
+                y: cy,
+                time: performance.now()
+            };
             combo = 0;
+            currentIndex++;
         }
     } else {
+        // Miss: show feedback and skip to next beat
+        const cx = obj.x * canvas.width / GAME_WIDTH;
+        const cy = obj.y * canvas.height / GAME_HEIGHT;
+        missFeedback = {
+            show: true,
+            x: cx,
+            y: cy,
+            time: performance.now()
+        };
         combo = 0;
+        currentIndex++;
+    }
+}
+
+// Draw miss feedback in gameLoop
+function drawMissFeedback() {
+    if (missFeedback.show) {
+        const elapsed = performance.now() - missFeedback.time;
+        if (elapsed < 600) {
+            ctx.save();
+            ctx.globalAlpha = 1 - (elapsed / 600);
+            ctx.font = `${Math.floor(canvas.height/12)}px Arial Black, Arial, sans-serif`;
+            ctx.fillStyle = '#ff4444';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('MISS', missFeedback.x, missFeedback.y);
+            ctx.restore();
+        } else {
+            missFeedback.show = false;
+        }
     }
 }
 
