@@ -99,7 +99,6 @@ function showSongAndBPMSelection() {
 // --- Beat count is now based on song length and BPM ---
 function randomizeBeatmap() {
     // Estimate song duration (in seconds) after music.src is set
-    // We'll use a fallback if duration is not loaded yet
     let duration = music.duration && !isNaN(music.duration) ? music.duration : 120; // fallback 120s
 
     // Calculate number of beats: beats = duration (seconds) * BPM / 60
@@ -119,6 +118,8 @@ function randomizeBeatmap() {
             valid = true;
             x = Math.floor(Math.random() * (GAME_WIDTH - 2 * HIT_CIRCLE_RADIUS) + HIT_CIRCLE_RADIUS);
             y = Math.floor(Math.random() * (GAME_HEIGHT - 2 * HIT_CIRCLE_RADIUS) + HIT_CIRCLE_RADIUS);
+
+            // Don't overlap with last 4 beats
             for (let pos of lastPositions) {
                 const dist = Math.hypot(x - pos.x, y - pos.y);
                 if (dist < HIT_CIRCLE_RADIUS * 2.2) {
@@ -126,6 +127,45 @@ function randomizeBeatmap() {
                     break;
                 }
             }
+
+            // Don't spawn on the line between any two of the last 4 beats
+            if (valid && lastPositions.length >= 2) {
+                for (let j = 0; j < lastPositions.length - 1; j++) {
+                    const a = lastPositions[j];
+                    const b = lastPositions[j + 1];
+                    // Distance from (x, y) to line segment ab
+                    const dx = b.x - a.x;
+                    const dy = b.y - a.y;
+                    const lengthSq = dx * dx + dy * dy;
+                    let t = 0;
+                    if (lengthSq > 0) {
+                        t = ((x - a.x) * dx + (y - a.y) * dy) / lengthSq;
+                        t = Math.max(0, Math.min(1, t));
+                    }
+                    const projX = a.x + t * dx;
+                    const projY = a.y + t * dy;
+                    const distToLine = Math.hypot(x - projX, y - projY);
+                    if (distToLine < HIT_CIRCLE_RADIUS * 1.5) { // 1.5x radius buffer from line
+                        valid = false;
+                        break;
+                    }
+                }
+            }
+
+            // Don't allow new line to overlap any previous line (simple intersection check)
+            if (valid && lastPositions.length >= 2) {
+                const newA = lastPositions[lastPositions.length - 1];
+                const newB = { x, y };
+                for (let j = 0; j < lastPositions.length - 2; j++) {
+                    const oldA = lastPositions[j];
+                    const oldB = lastPositions[j + 1];
+                    if (linesIntersect(newA, newB, oldA, oldB)) {
+                        valid = false;
+                        break;
+                    }
+                }
+            }
+
             attempts++;
             if (attempts > 100) break;
         } while (!valid);
@@ -143,6 +183,18 @@ function randomizeBeatmap() {
         nextNumber++;
         if (nextNumber > 6) nextNumber = 1;
     }
+}
+
+// Helper function to check if two line segments intersect
+function linesIntersect(a, b, c, d) {
+    // Returns true if line ab and cd intersect
+    function ccw(p1, p2, p3) {
+        return (p3.y - p1.y) * (p2.x - p1.x) > (p2.y - p1.y) * (p3.x - p1.x);
+    }
+    return (
+        ccw(a, c, d) !== ccw(b, c, d) &&
+        ccw(a, b, c) !== ccw(a, b, d)
+    );
 }
 
 let startTime = 0;
