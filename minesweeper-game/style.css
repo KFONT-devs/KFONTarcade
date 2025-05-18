@@ -1,45 +1,145 @@
+/* Import a pixel/arcade font (Google Fonts or local) */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
+    background: #181028;
+    color: #39ff14;
+    font-family: 'Press Start 2P', monospace;
+    margin: 0;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    height: 100vh;
-    margin: 0;
+    justify-content: flex-start;
 }
 
-h1 {
-    color: #333;
+h1, h2, h3 {
+    color: #ff0080;
+    text-shadow: 0 0 8px #ff0080, 0 0 16px #fff;
+    margin-top: 32px;
+    letter-spacing: 2px;
 }
 
 #game-board {
-    display: grid;
-    grid-template-columns: repeat(10, 30px);
-    grid-template-rows: repeat(10, 30px);
-    gap: 2px;
+    display: inline-block;
+    margin: 40px auto;
+    border: 6px solid #00eaff;
+    box-shadow: 0 0 24px #00eaff, 0 0 8px #ff0080 inset;
+    background: #222;
+    padding: 16px;
+}
+
+.row {
+    display: flex;
 }
 
 .cell {
-    width: 30px;
-    height: 30px;
-    background-color: #ddd;
-    border: 1px solid #aaa;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin: 2px;
+    background: #181028;
+    border: 2px solid #00eaff;
+    box-shadow: 0 0 6px #00eaff;
+    color: #39ff14;
+    font-family: 'Press Start 2P', monospace;
     font-size: 18px;
+    text-align: center;
+    line-height: 32px;
     cursor: pointer;
+    transition: background 0.1s, box-shadow 0.1s;
+    user-select: none;
 }
 
 .cell.revealed {
-    background-color: #fff;
+    background: #222;
+    color: #fff;
+    border: 2px solid #ff0080;
+    box-shadow: 0 0 8px #ff0080;
 }
 
 .cell.mine {
-    background-color: red;
+    background: #ff0080;
+    color: #fff;
+    text-shadow: 0 0 8px #fff, 0 0 16px #ff0080;
 }
 
-.cell.flagged {
-    background-color: yellow;
+.cell:hover:not(.revealed) {
+    background: #00eaff;
+    color: #181028;
+    box-shadow: 0 0 12px #00eaff, 0 0 8px #ff0080 inset;
+}
+
+.cell:active {
+    background: #ff0080;
+    color: #fff;
+}
+
+.cell::selection {
+    background: transparent;
+}
+
+.cell[style*="flag"] {
+    color: #fffb00;
+    text-shadow: 0 0 8px #fffb00, 0 0 16px #fff;
+}
+
+.cell:after {
+    /* Optional: add scanline effect */
+    content: "";
+    display: block;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 3px,
+        rgba(255,255,255,0.03) 4px,
+        transparent 5px
+    );
+}
+
+#game-board, .cell {
+    position: relative;
+}
+
+#game-over-message {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fffb00;
+    font-size: 2.5rem;
+    font-family: 'Press Start 2P', monospace;
+    text-align: center;
+    text-shadow: 0 0 16px #ff0080, 0 0 32px #00eaff;
+    z-index: 10;
+    pointer-events: none;
+    letter-spacing: 2px;
+    line-height: 1.5;
+}
+
+.fall {
+    animation: fall 0.8s cubic-bezier(.5,1.5,.5,1.1) forwards;
+}
+
+@keyframes fall {
+    to {
+        transform: translateY(600px) rotateZ(30deg) scale(0.8);
+        opacity: 0;
+    }
+}
+
+@media (max-width: 600px) {
+    .cell {
+        width: 24px;
+        height: 24px;
+        font-size: 12px;
+        line-height: 24px;
+    }
+    #game-board {
+        padding: 4px;
+    }
 }

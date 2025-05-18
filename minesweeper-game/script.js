@@ -153,7 +153,7 @@ function revealCell(row, col) {
     revealedCount++;
     if (board[row][col].isMine) {
         gameOver = true;
-        alert('Game Over! You hit a mine.');
+        triggerGameOverAnimation();
     } else {
         if (board[row][col].neighborMines === 0) {
             revealNeighbors(row, col);
@@ -197,3 +197,19 @@ function handleCellRightClick(event) {
 
 // Start the game
 initGame();
+
+// Add this new function at the end of your script.js
+function triggerGameOverAnimation() {
+    // Remove event listeners to prevent further interaction
+    const cells = document.querySelectorAll('.cell');
+    cells.forEach((cell, i) => {
+        setTimeout(() => {
+            cell.classList.add('fall');
+        }, Math.random() * 400); // randomize for a more dynamic effect
+    });
+
+    // Show the message after the animation
+    setTimeout(() => {
+        document.getElementById('game-over-message').style.display = 'block';
+    }, 900);
+}
