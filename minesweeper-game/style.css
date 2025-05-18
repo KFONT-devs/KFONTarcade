@@ -185,8 +185,13 @@ h1, h2, h3 {
     }
 }
 
+#insert-coin {
+    transition: color 0.2s, text-shadow 0.2s, transform 0.1s;
+}
+
 #insert-coin:hover {
     color: #fffb00;
     text-shadow: 0 0 16px #fffb00, 0 0 32px #00eaff;
     cursor: pointer;
+    transform: scale(1.08) rotate(-2deg);
 }

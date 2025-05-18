@@ -233,17 +233,22 @@ function triggerGameOverAnimation() {
     });
 
     setTimeout(() => {
-        document.getElementById('game-over-message').style.display = 'block';
-        // Add click handler for INSERT COIN
+        const gameOverMsg = document.getElementById('game-over-message');
+        gameOverMsg.style.display = 'block';
+
+        // Make sure to set pointer-events so the button is clickable
+        gameOverMsg.style.pointerEvents = 'auto';
+
         const insertCoin = document.getElementById('insert-coin');
         if (insertCoin) {
-            insertCoin.onclick = function() {
-                // Hide message, unblur, reset game
-                document.getElementById('game-over-message').style.display = 'none';
+            insertCoin.onclick = function () {
+                gameOverMsg.style.display = 'none';
                 gameBoard.classList.remove('blur');
                 firstClick = true;
                 revealedCount = 0;
                 gameOver = false;
+                // Remove all .fall classes from cells for next game
+                document.querySelectorAll('.cell.fall').forEach(cell => cell.classList.remove('fall'));
                 initGame();
             };
         }
