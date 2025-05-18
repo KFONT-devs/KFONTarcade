@@ -22,22 +22,126 @@ const beatmapTemplate = [
 ];
 let beatmap = [];
 
-// --- Update beatmapTemplate to allow random number of circles (max 6) ---
+// Add song and BPM selection UI
+let selectedSong = '';
+let selectedBPM = 160;
+
+// Update availableSongs to use real assets
+const availableSongs = [
+    { name: "Amerie - 1 thing (piano)", file: "assets/Amerie - 1 thing (piano).mp3" },
+    { name: "Nightcore - Angel With A Shotgun", file: "assets/Nightcore - Angel With A Shotgun.mp3" }
+];
+
+// Add song and BPM selection to menu
+function showSongAndBPMSelection() {
+    // Remove old selection UI if exists
+    let old = document.getElementById('songBpmSelect');
+    if (old) old.remove();
+
+    const selDiv = document.createElement('div');
+    selDiv.id = 'songBpmSelect';
+    selDiv.style.position = 'fixed';
+    selDiv.style.top = '50%';
+    selDiv.style.left = '50%';
+    selDiv.style.transform = 'translate(-50%, -50%)';
+    selDiv.style.background = 'rgba(0,0,0,0.92)';
+    selDiv.style.color = '#fff';
+    selDiv.style.padding = '40px 60px';
+    selDiv.style.borderRadius = '20px';
+    selDiv.style.fontSize = '1.5em';
+    selDiv.style.zIndex = 3000;
+    selDiv.style.textAlign = 'center';
+
+    // Song select
+    let songOptions = availableSongs.map(
+        (s, i) => `<option value="${s.file}">${s.name}</option>`
+    ).join('');
+    selDiv.innerHTML = `
+        <div style="margin-bottom:20px;">Select Song</div>
+        <select id="songSelect" style="font-size:1em;padding:5px 20px;margin-bottom:20px;">${songOptions}</select>
+        <div style="margin:20px 0 10px 0;">Select BPM (Difficulty)</div>
+        <div id="bpmStars" style="margin-bottom:20px;">
+            <span class="star" data-bpm="160" style="font-size:2em;cursor:pointer;color:gold;">★</span>
+            <span class="star" data-bpm="170" style="font-size:2em;cursor:pointer;color:gray;">★</span>
+            <span class="star" data-bpm="180" style="font-size:2em;cursor:pointer;color:gray;">★</span>
+            <span class="star" data-bpm="190" style="font-size:2em;cursor:pointer;color:gray;">★</span>
+            <span class="star" data-bpm="200" style="font-size:2em;cursor:pointer;color:gray;">★</span>
+        </div>
+        <button id="confirmSongBpm" style="font-size:1em;padding:10px 30px;margin-top:10px;">Start Game</button>
+    `;
+    document.body.appendChild(selDiv);
+
+    // Star click logic
+    const stars = selDiv.querySelectorAll('.star');
+    stars.forEach((star, idx) => {
+        star.onclick = () => {
+            selectedBPM = parseInt(star.getAttribute('data-bpm'));
+            stars.forEach((s, i) => {
+                s.style.color = i <= idx ? 'gold' : 'gray';
+            });
+        };
+    });
+
+    // Song select logic
+    const songSelect = selDiv.querySelector('#songSelect');
+    selectedSong = songSelect.value;
+    songSelect.onchange = () => {
+        selectedSong = songSelect.value;
+    };
+
+    // Confirm button
+    selDiv.querySelector('#confirmSongBpm').onclick = () => {
+        document.body.removeChild(selDiv);
+        startGameWithSelection();
+    };
+}
+
+// --- Beat count is now based on song length and BPM ---
 function randomizeBeatmap() {
-    // At least 100 circles, up to 120 for some randomness
-    const numCircles = Math.floor(Math.random() * 21) + 100; // 100 to 120
-    const interval = 1000; // 1 second between circles
+    // Estimate song duration (in seconds) after music.src is set
+    // We'll use a fallback if duration is not loaded yet
+    let duration = music.duration && !isNaN(music.duration) ? music.duration : 120; // fallback 120s
+
+    // Calculate number of beats: beats = duration (seconds) * BPM / 60
+    const beats = Math.floor(duration * selectedBPM / 60);
+
+    // Interval between beats in ms
+    const interval = Math.round(60000 / selectedBPM);
+
     beatmap = [];
     let nextNumber = 1;
-    for (let i = 0; i < numCircles; i++) {
+    let lastPositions = [];
+
+    for (let i = 0; i < beats; i++) {
+        let x, y, valid;
+        let attempts = 0;
+        do {
+            valid = true;
+            x = Math.floor(Math.random() * (GAME_WIDTH - 2 * HIT_CIRCLE_RADIUS) + HIT_CIRCLE_RADIUS);
+            y = Math.floor(Math.random() * (GAME_HEIGHT - 2 * HIT_CIRCLE_RADIUS) + HIT_CIRCLE_RADIUS);
+            for (let pos of lastPositions) {
+                const dist = Math.hypot(x - pos.x, y - pos.y);
+                if (dist < HIT_CIRCLE_RADIUS * 2.2) {
+                    valid = false;
+                    break;
+                }
+            }
+            attempts++;
+            if (attempts > 100) break;
+        } while (!valid);
+
         beatmap.push({
             time: 1000 + i * interval,
-            x: Math.floor(Math.random() * (GAME_WIDTH - 2 * HIT_CIRCLE_RADIUS) + HIT_CIRCLE_RADIUS),
-            y: Math.floor(Math.random() * (GAME_HEIGHT - 2 * HIT_CIRCLE_RADIUS) + HIT_CIRCLE_RADIUS),
+            x,
+            y,
             number: nextNumber
         });
+
+        lastPositions.push({ x, y });
+        if (lastPositions.length > 4) lastPositions.shift();
+
         nextNumber++;
-        if (nextNumber > 6) nextNumber = 1; // Loop back to 1 after 6
+        if (nextNumber > 6) nextNumber = 1;
     }
 }
 
@@ -51,6 +155,9 @@ let maxCombo = 0;
 
 // Add a variable to store miss feedback
 let missFeedback = { show: false, x: 0, y: 0, time: 0 };
+
+// Add a variable to store hit feedback
+let hitFeedback = { show: false, x: 0, y: 0, time: 0, text: '', color: '#fff' };
 
 function resizeCanvas() {
     // Responsive canvas
@@ -171,8 +278,8 @@ canvas.addEventListener('touchend', e => {
     }
 });
 
-// On game start, randomize only normal circles and play music
-startBtn.onclick = () => {
+// --- Wait for music metadata before starting game ---
+function startGameWithSelection() {
     menu.style.display = 'none';
     canvas.style.display = '';
     resizeCanvas();
@@ -180,10 +287,34 @@ startBtn.onclick = () => {
     currentIndex = 0;
     running = true;
     startTime = performance.now();
-    randomizeBeatmap();
+    music.src = selectedSong;
     music.currentTime = 0;
-    music.play(); // Start the song
-    requestAnimationFrame(gameLoop);
+
+    // Wait for duration to be loaded before generating beatmap
+    if (isNaN(music.duration) || music.duration === 0) {
+        music.onloadedmetadata = () => {
+            randomizeBeatmap();
+            music.play();
+            requestAnimationFrame(gameLoop);
+        };
+        // In case metadata never loads, fallback after 1s
+        setTimeout(() => {
+            if (!beatmap.length) {
+                randomizeBeatmap();
+                music.play();
+                requestAnimationFrame(gameLoop);
+            }
+        }, 1000);
+    } else {
+        randomizeBeatmap();
+        music.play();
+        requestAnimationFrame(gameLoop);
+    }
+}
+
+// Change startBtn.onclick to show song/BPM selection
+startBtn.onclick = () => {
+    showSongAndBPMSelection();
 };
 
 // Pause menu logic
@@ -257,16 +388,56 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// Update gameLoop to use showScoreboard
+// Add this function after drawMissFeedback or near your draw functions
+
+function drawBeatLines() {
+    // Draw lines between visible beats in order (1→2→3→4→5→6→1→...)
+    const now = getNow();
+    let beatsOnScreen = [];
+    // Collect up to 4 visible beats (same as gameLoop)
+    for (let i = currentIndex, count = 0; i < beatmap.length && count < 4; i++) {
+        const obj = beatmap[i];
+        const dt = obj.time - now;
+        if (dt < -HIT_WINDOW) continue;
+        if (dt > 2000) break;
+        beatsOnScreen.push(obj);
+        count++;
+    }
+    // Draw lines between consecutive beats
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,180,0.5)';
+    ctx.lineWidth = 4;
+    for (let i = 0; i < beatsOnScreen.length - 1; i++) {
+        const a = beatsOnScreen[i];
+        const b = beatsOnScreen[i + 1];
+        ctx.beginPath();
+        ctx.moveTo(
+            a.x * canvas.width / GAME_WIDTH,
+            a.y * canvas.height / GAME_HEIGHT
+        );
+        ctx.lineTo(
+            b.x * canvas.width / GAME_WIDTH,
+            b.y * canvas.height / GAME_HEIGHT
+        );
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+// --- In gameLoop, call drawBeatLines before drawing circles ---
 function gameLoop() {
     if (!running || paused) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawScore();
     drawMissFeedback();
+    drawHitFeedback();
+    drawBeatLines(); // <-- Add this line
     const now = getNow();
     let foundActive = false;
-    // Draw normal hit circles only
+    // Limit to only 4 beats on screen at the same time
+    let beatsOnScreen = 0;
     for (let i = currentIndex; i < beatmap.length; i++) {
+        if (beatsOnScreen >= 4) break;
         const obj = beatmap[i];
         const dt = obj.time - now;
         if (dt < -HIT_WINDOW) {
@@ -288,6 +459,7 @@ function gameLoop() {
         let approach = getApproach(dt);
         drawCircle(obj, alpha, approach);
         foundActive = true;
+        beatsOnScreen++;
     }
     if (currentIndex >= beatmap.length || !foundActive) {
         running = false;
@@ -320,31 +492,52 @@ function handleHit(x, y) {
     if (!obj) return;
     const dt = obj.time - now;
     let approach = getApproach(dt);
+    const cx = obj.x * canvas.width / GAME_WIDTH;
+    const cy = obj.y * canvas.height / GAME_HEIGHT;
+    const dist = Math.hypot(x - cx, y - cy);
+
     // Only allow hit when approach circle is visually at the same radius as the inner circle
-    if (Math.abs(approach - 1) < 0.12) { // Allow a small margin for user error
-        const cx = obj.x * canvas.width / GAME_WIDTH;
-        const cy = obj.y * canvas.height / GAME_HEIGHT;
-        const dist = Math.hypot(x - cx, y - cy);
-        if (dist < HIT_CIRCLE_RADIUS * canvas.width / GAME_WIDTH) {
-            score += 300 - Math.floor(Math.abs(dt));
+    if (Math.abs(approach - 1) < 0.12 && dist < HIT_CIRCLE_RADIUS * canvas.width / GAME_WIDTH) {
+        // Judgement based on timing
+        let absDt = Math.abs(dt);
+        let scoreText = '';
+        let scoreColor = '';
+        let addScore = 0;
+        if (absDt <= 50) {
+            scoreText = '300';
+            scoreColor = '#00eaff';
+            addScore = 300;
+        } else if (absDt <= 100) {
+            scoreText = '150';
+            scoreColor = '#66ff66';
+            addScore = 150;
+        } else if (absDt <= 200) {
+            scoreText = '50';
+            scoreColor = '#ffe066';
+            addScore = 50;
+        } else {
+            scoreText = 'MISS';
+            scoreColor = '#ff4444';
+            addScore = 0;
+        }
+        if (scoreText === 'MISS') {
+            combo = 0;
+        } else {
             combo++;
             if (combo > maxCombo) maxCombo = combo;
-            beatmap.splice(currentIndex, 1);
-        } else {
-            // Miss: show feedback and skip to next beat
-            missFeedback = {
-                show: true,
-                x: cx,
-                y: cy,
-                time: performance.now()
-            };
-            combo = 0;
-            currentIndex++;
         }
+        score += addScore;
+        hitFeedback = {
+            show: true,
+            x: cx,
+            y: cy,
+            time: performance.now(),
+            text: scoreText,
+            color: scoreColor
+        };
+        beatmap.splice(currentIndex, 1);
     } else {
         // Miss: show feedback and skip to next beat
-        const cx = obj.x * canvas.width / GAME_WIDTH;
-        const cy = obj.y * canvas.height / GAME_HEIGHT;
         missFeedback = {
             show: true,
             x: cx,
@@ -371,6 +564,25 @@ function drawMissFeedback() {
             ctx.restore();
         } else {
             missFeedback.show = false;
+        }
+    }
+}
+
+// Draw hit feedback in gameLoop
+function drawHitFeedback() {
+    if (hitFeedback.show) {
+        const elapsed = performance.now() - hitFeedback.time;
+        if (elapsed < 600) {
+            ctx.save();
+            ctx.globalAlpha = 1 - (elapsed / 600);
+            ctx.font = `${Math.floor(canvas.height/12)}px Arial Black, Arial, sans-serif`;
+            ctx.fillStyle = hitFeedback.color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(hitFeedback.text, hitFeedback.x, hitFeedback.y);
+            ctx.restore();
+        } else {
+            hitFeedback.show = false;
         }
     }
 }
