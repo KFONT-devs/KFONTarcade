@@ -9,8 +9,11 @@ const music = document.getElementById('music');
 // Game settings
 const GAME_WIDTH = 800;
 const GAME_HEIGHT = 600;
-const HIT_CIRCLE_RADIUS = 50;
+const HIT_CIRCLE_RADIUS = 70; // or any value larger than before (default is usually 40-48)
 const HIT_WINDOW = 300; // ms
+
+const PLAY_WIDTH = GAME_WIDTH;
+const PLAY_HEIGHT = GAME_HEIGHT;
 
 // Dummy beatmap template (used to reset the game)
 const beatmapTemplate = [
@@ -235,33 +238,31 @@ let missFeedback = { show: false, x: 0, y: 0, time: 0 };
 // Add a variable to store hit feedback
 let hitFeedback = { show: false, x: 0, y: 0, time: 0, text: '', color: '#fff' };
 
-function resizeCanvas() {
-    // Responsive canvas
-    const ratio = GAME_WIDTH / GAME_HEIGHT;
-    let w = window.innerWidth * 0.98;
-    let h = window.innerHeight * 0.7;
-    if (w / h > ratio) w = h * ratio;
-    else h = w / ratio;
-    canvas.width = w;
-    canvas.height = h;
-}
-window.addEventListener('resize', resizeCanvas);
-
 function getApproach(dt) {
     // Approach circle shrinks linearly from 2.5x to 1x radius as dt goes from 2000ms to 0ms
     // At dt=0, approach=1 (outer meets inner)
     return Math.max(1, Math.min(2.5, 1 + (dt / 2000) * 1.5));
 }
 
+// Helper to get offset for centering the play area
+function getPlayAreaOffset() {
+    return {
+        x: Math.floor((canvas.width - PLAY_WIDTH) / 2),
+        y: Math.floor((canvas.height - PLAY_HEIGHT) / 2)
+    };
+}
+
+// Example: update drawCircle to use offset
 function drawCircle(circle, alpha = 1, approach = 1) {
+    const { x: offsetX, y: offsetY } = getPlayAreaOffset();
     ctx.save();
     // Draw approach circle
     if (approach > 0.01) {
         ctx.beginPath();
         ctx.arc(
-            circle.x * canvas.width / GAME_WIDTH,
-            circle.y * canvas.height / GAME_HEIGHT,
-            HIT_CIRCLE_RADIUS * approach * canvas.width / GAME_WIDTH,
+            offsetX + circle.x,
+            offsetY + circle.y,
+            HIT_CIRCLE_RADIUS * approach,
             0, 2 * Math.PI
         );
         ctx.lineWidth = 4;
@@ -271,7 +272,7 @@ function drawCircle(circle, alpha = 1, approach = 1) {
     }
     ctx.globalAlpha = alpha;
     ctx.beginPath();
-    ctx.arc(circle.x * canvas.width / GAME_WIDTH, circle.y * canvas.height / GAME_HEIGHT, HIT_CIRCLE_RADIUS * canvas.width / GAME_WIDTH, 0, 2 * Math.PI);
+    ctx.arc(offsetX + circle.x, offsetY + circle.y, HIT_CIRCLE_RADIUS, 0, 2 * Math.PI);
     ctx.fillStyle = '#ff66aa';
     ctx.fill();
     ctx.lineWidth = 6;
@@ -281,10 +282,10 @@ function drawCircle(circle, alpha = 1, approach = 1) {
     // Draw number in the center
     ctx.globalAlpha = 1;
     ctx.fillStyle = '#fff';
-    ctx.font = `${Math.floor(HIT_CIRCLE_RADIUS * canvas.width / GAME_WIDTH)}px Arial Black, Arial, sans-serif`;
+    ctx.font = `${Math.floor(HIT_CIRCLE_RADIUS)}px Arial Black, Arial, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(circle.number, circle.x * canvas.width / GAME_WIDTH, circle.y * canvas.height / GAME_HEIGHT);
+    ctx.fillText(circle.number, offsetX + circle.x, offsetY + circle.y);
 
     ctx.restore();
 }
@@ -483,17 +484,18 @@ function drawBeatLines() {
     ctx.save();
     ctx.strokeStyle = 'rgba(255,255,180,0.5)';
     ctx.lineWidth = 4;
+    const { x: offsetX, y: offsetY } = getPlayAreaOffset();
     for (let i = 0; i < beatsOnScreen.length - 1; i++) {
         const a = beatsOnScreen[i];
         const b = beatsOnScreen[i + 1];
         ctx.beginPath();
         ctx.moveTo(
-            a.x * canvas.width / GAME_WIDTH,
-            a.y * canvas.height / GAME_HEIGHT
+            offsetX + a.x,
+            offsetY + a.y
         );
         ctx.lineTo(
-            b.x * canvas.width / GAME_WIDTH,
-            b.y * canvas.height / GAME_HEIGHT
+            offsetX + b.x,
+            offsetY + b.y
         );
         ctx.stroke();
     }
@@ -518,8 +520,9 @@ function gameLoop() {
         const dt = obj.time - now;
         if (dt < -HIT_WINDOW) {
             // Missed by time out: show feedback and skip to next beat
-            const cx = obj.x * canvas.width / GAME_WIDTH;
-            const cy = obj.y * canvas.height / GAME_HEIGHT;
+            const { x: offsetX, y: offsetY } = getPlayAreaOffset();
+            const cx = offsetX + obj.x;
+            const cy = offsetY + obj.y;
             missFeedback = {
                 show: true,
                 x: cx,
@@ -566,9 +569,10 @@ function handleHit(x, y) {
     const now = getNow();
     const obj = beatmap[currentIndex];
     if (!obj) return;
+    const { x: offsetX, y: offsetY } = getPlayAreaOffset();
+    const cx = offsetX + obj.x;
+    const cy = offsetY + obj.y;
     const dt = obj.time - now;
-    const cx = obj.x * canvas.width / GAME_WIDTH;
-    const cy = obj.y * canvas.height / GAME_HEIGHT;
     const dist = Math.hypot(x - cx, y - cy);
 
     // Only allow hit if within hit window and inside the circle
@@ -695,3 +699,9 @@ function showScoreboard() {
         canvas.style.display = 'none';
     };
 }
+
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
