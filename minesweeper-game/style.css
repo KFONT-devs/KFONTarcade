@@ -20,13 +20,23 @@ h1, h2, h3 {
     letter-spacing: 2px;
 }
 
+#game-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
 #game-board {
     display: inline-block;
-    margin: 40px auto;
+    margin: 40px auto 0 auto;
     border: 6px solid #00eaff;
     box-shadow: 0 0 24px #00eaff, 0 0 8px #ff0080 inset;
     background: #222;
     padding: 16px;
+    position: relative;
+    z-index: 1;
 }
 
 .row {
@@ -100,25 +110,25 @@ h1, h2, h3 {
     );
 }
 
-#game-board, .cell {
-    position: relative;
-}
-
 #game-over-message {
     display: none;
     position: absolute;
     top: 50%;
     left: 50%;
+    width: 100%;
     transform: translate(-50%, -50%);
     color: #fffb00;
     font-size: 2.5rem;
     font-family: 'Press Start 2P', monospace;
     text-align: center;
     text-shadow: 0 0 16px #ff0080, 0 0 32px #00eaff;
-    z-index: 10;
+    z-index: 2;
     pointer-events: none;
     letter-spacing: 2px;
     line-height: 1.5;
+    background: transparent;
+    /* Optional: add a subtle glow behind the text */
+    /* filter: drop-shadow(0 0 16px #222); */
 }
 
 .fall {
@@ -127,7 +137,7 @@ h1, h2, h3 {
 
 @keyframes fall {
     to {
-        transform: translateY(600px) rotateZ(30deg) scale(0.8);
+        transform: translateY(120vh) rotateZ(30deg) scale(0.8);
         opacity: 0;
     }
 }
