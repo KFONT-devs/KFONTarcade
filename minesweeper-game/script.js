@@ -10,6 +10,14 @@ let firstClick = true; // Track if it's the first click
 
 // Initialize the game
 function initGame() {
+    gameOver = false;        // <-- Reset game over flag
+    firstClick = true;       // <-- Reset first click flag
+    revealedCount = 0;       // <-- Reset revealed count
+    document.getElementById('win-message').style.display = 'none';
+    document.getElementById('win-message').style.pointerEvents = 'none';
+    document.getElementById('game-over-message').style.display = 'none';
+    document.getElementById('game-over-message').style.pointerEvents = 'none';
+    document.getElementById('game-board').classList.remove('blur');
     board = createBoard();
     placeMines();
     calculateNumbers();
@@ -121,8 +129,7 @@ function handleCellFlagTouch(event, row, col) {
     event.preventDefault();
     if (gameOver) return;
     if (board[row][col].isRevealed) return;
-    board[row][col].isFlagged = !board[row][col].isFlagged;
-    renderBoard();
+    toggleFlag(row, col);
 }
 
 // Handle cell click events
@@ -165,10 +172,20 @@ function revealCell(row, col) {
 
 // Reveal neighboring cells
 function revealNeighbors(row, col) {
-    for (let r = row - 1; r <= row + 1; r++) {
-        for (let c = col - 1; c <= col + 1; c++) {
-            if (r >= 0 && r < rows && c >= 0 && c < cols) {
-                revealCell(r, c);
+    const queue = [[row, col]];
+
+    while (queue.length > 0) {
+        const [currentRow, currentCol] = queue.shift();
+
+        for (let r = currentRow - 1; r <= currentRow + 1; r++) {
+            for (let c = currentCol - 1; c <= currentCol + 1; c++) {
+                if (r >= 0 && r < rows && c >= 0 && c < cols && !board[r][c].isRevealed) {
+                    board[r][c].isRevealed = true;
+                    revealedCount++;
+                    if (board[r][c].neighborMines === 0) {
+                        queue.push([r, c]);
+                    }
+                }
             }
         }
     }
@@ -186,22 +203,17 @@ function checkWinCondition() {
 function triggerWinAnimation() {
     const gameBoard = document.getElementById('game-board');
     gameBoard.classList.add('blur');
-
     setTimeout(() => {
-        document.getElementById('win-message').style.display = 'block';
-        // Add click handler for PLAY AGAIN
-        const playAgain = document.getElementById('play-again');
-        if (playAgain) {
-            playAgain.onclick = function() {
-                document.getElementById('win-message').style.display = 'none';
-                gameBoard.classList.remove('blur');
-                firstClick = true;
-                revealedCount = 0;
-                gameOver = false;
-                initGame();
-            };
-        }
+        const winMsg = document.getElementById('win-message');
+        winMsg.style.display = 'block';
+        winMsg.style.pointerEvents = 'auto';
     }, 600);
+}
+
+// Toggle flag on a cell
+function toggleFlag(row, col) {
+    board[row][col].isFlagged = !board[row][col].isFlagged;
+    renderBoard();
 }
 
 // Add right-click handler for flagging
@@ -213,41 +225,31 @@ function handleCellRightClick(event) {
 
     if (board[row][col].isRevealed) return;
 
-    board[row][col].isFlagged = !board[row][col].isFlagged;
-    renderBoard();
+    toggleFlag(row, col);
 }
-
-// Start the game
-initGame();
-
 // Add this new function at the end of your script.js
 function triggerGameOverAnimation() {
     const gameBoard = document.getElementById('game-board');
     gameBoard.classList.add('blur');
-
     const cells = document.querySelectorAll('.cell');
     cells.forEach((cell, i) => {
         setTimeout(() => {
             cell.classList.add('fall');
         }, Math.random() * 400);
     });
-
     setTimeout(() => {
         const gameOverMsg = document.getElementById('game-over-message');
         gameOverMsg.style.display = 'block';
-
-        // Make sure to set pointer-events so the button is clickable
         gameOverMsg.style.pointerEvents = 'auto';
-
         const insertCoin = document.getElementById('insert-coin');
         if (insertCoin) {
             insertCoin.onclick = function () {
                 gameOverMsg.style.display = 'none';
+                gameOverMsg.style.pointerEvents = 'none';
                 gameBoard.classList.remove('blur');
                 firstClick = true;
                 revealedCount = 0;
                 gameOver = false;
-                // Remove all .fall classes from cells for next game
                 document.querySelectorAll('.cell.fall').forEach(cell => cell.classList.remove('fall'));
                 initGame();
             };
@@ -258,11 +260,35 @@ function triggerGameOverAnimation() {
 function getSettingsAndStart() {
     const rowsInput = document.getElementById('rows-input');
     const colsInput = document.getElementById('cols-input');
-    const minesInput = document.getElementById('mines-input');
-    rows = Math.max(5, Math.min(30, parseInt(rowsInput.value, 10) || 10));
+    // Clamp rows and cols values between 5 and 30
+    rows = parseInt(rowsInput.value, 10);
+    cols = parseInt(colsInput.value, 10);
+
+    if (isNaN(rows) || rows <= 0) {
+        alert('Invalid input for rows. Setting to default value of 10.');
+        rows = 10;
+    }
+    if (isNaN(cols) || cols <= 0) {
+        alert('Invalid input for columns. Setting to default value of 10.');
+        cols = 10;
+    }
+
+    rows = Math.max(5, Math.min(30, rows));
+    cols = Math.max(5, Math.min(30, cols));
+
+    // Provide feedback if the input is out of range
+    if (rowsInput.value < 5 || rowsInput.value > 30) {
+        alert('Rows must be between 5 and 30. Adjusting to the nearest valid value.');
+    }
+    if (colsInput.value < 5 || colsInput.value > 30) {
+        alert('Columns must be between 5 and 30. Adjusting to the nearest valid value.');
+    }
     cols = Math.max(5, Math.min(30, parseInt(colsInput.value, 10) || 10));
     // Limit mines to at most rows*cols-1
     const maxMines = rows * cols - 1;
+    if (minesInput.value > maxMines) {
+        alert(`Number of mines must be less than ${maxMines}. Adjusting to maximum allowed.`);
+    }
     minesCount = Math.max(1, Math.min(maxMines, parseInt(minesInput.value, 10) || 10));
     minesInput.max = maxMines; // update max for user
     initGame();
@@ -277,4 +303,22 @@ document.getElementById('start-btn').addEventListener('click', getSettingsAndSta
 });
 
 // Initialize the game on page load
-window.addEventListener('DOMContentLoaded', getSettingsAndStart);
+// Initialize the game on page load
+window.addEventListener('DOMContentLoaded', () => {
+    initGame();
+    getSettingsAndStart();
+});
+// Set up PLAY AGAIN button once
+window.addEventListener('DOMContentLoaded', () => {
+    const playAgain = document.getElementById('play-again');
+    if (playAgain) {
+        playAgain.onclick = function() {
+            document.getElementById('win-message').style.display = 'none';
+            document.getElementById('game-board').classList.remove('blur');
+            firstClick = true;
+            revealedCount = 0;
+            gameOver = false;
+            initGame();
+        };
+    }
+});
