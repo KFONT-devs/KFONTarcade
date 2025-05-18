@@ -22,13 +22,23 @@ const beatmapTemplate = [
 ];
 let beatmap = [];
 
+// --- Update beatmapTemplate to allow random number of circles (max 6) ---
 function randomizeBeatmap() {
-    // Randomly assign x, y for each hit object
-    beatmap = beatmapTemplate.map(obj => ({
-        time: obj.time,
-        x: Math.floor(Math.random() * (GAME_WIDTH - 2 * HIT_CIRCLE_RADIUS) + HIT_CIRCLE_RADIUS),
-        y: Math.floor(Math.random() * (GAME_HEIGHT - 2 * HIT_CIRCLE_RADIUS) + HIT_CIRCLE_RADIUS)
-    }));
+    // At least 100 circles, up to 120 for some randomness
+    const numCircles = Math.floor(Math.random() * 21) + 100; // 100 to 120
+    const interval = 1000; // 1 second between circles
+    beatmap = [];
+    let nextNumber = 1;
+    for (let i = 0; i < numCircles; i++) {
+        beatmap.push({
+            time: 1000 + i * interval,
+            x: Math.floor(Math.random() * (GAME_WIDTH - 2 * HIT_CIRCLE_RADIUS) + HIT_CIRCLE_RADIUS),
+            y: Math.floor(Math.random() * (GAME_HEIGHT - 2 * HIT_CIRCLE_RADIUS) + HIT_CIRCLE_RADIUS),
+            number: nextNumber
+        });
+        nextNumber++;
+        if (nextNumber > 6) nextNumber = 1; // Loop back to 1 after 6
+    }
 }
 
 let startTime = 0;
@@ -78,6 +88,15 @@ function drawCircle(circle, alpha = 1, approach = 1) {
     ctx.lineWidth = 6;
     ctx.strokeStyle = '#fff';
     ctx.stroke();
+
+    // Draw number in the center
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#fff';
+    ctx.font = `${Math.floor(HIT_CIRCLE_RADIUS * canvas.width / GAME_WIDTH)}px Arial Black, Arial, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(circle.number, circle.x * canvas.width / GAME_WIDTH, circle.y * canvas.height / GAME_HEIGHT);
+
     ctx.restore();
 }
 
@@ -99,156 +118,7 @@ function getNow() {
     }
 }
 
-// --- NEW SLIDER CLASS IMPLEMENTATION ---
-class Slider {
-    constructor(startTime, duration, start, end) {
-        this.startTime = startTime;
-        this.endTime = startTime + duration;
-        this.start = start;
-        this.end = end;
-        this.held = false;
-        this.completed = false;
-        this.holdStart = null;
-    }
-
-    update(now, mouse) {
-        // Handle slider state (held, completed) based on mouse
-        if (this.completed || now < this.startTime || now > this.endTime) return;
-        if (mouse.down && !this.held) {
-            // Check if mouse is on start circle
-            const cx = this.start.x * canvas.width / GAME_WIDTH;
-            const cy = this.start.y * canvas.height / GAME_HEIGHT;
-            const dist = Math.hypot(mouse.x - cx, mouse.y - cy);
-            if (dist < HIT_CIRCLE_RADIUS * canvas.width / GAME_WIDTH) {
-                this.held = true;
-                this.holdStart = now;
-            }
-        }
-        if (this.held && mouse.move) {
-            // Check if mouse is following the slider ball
-            const t = (now - this.startTime) / (this.endTime - this.startTime);
-            const bx = this.start.x + (this.end.x - this.start.x) * t;
-            const by = this.start.y + (this.end.y - this.start.y) * t;
-            const cx = mouse.x / canvas.width * GAME_WIDTH;
-            const cy = mouse.y / canvas.height * GAME_HEIGHT;
-            const dist = Math.hypot(cx - bx, cy - by);
-            if (dist > HIT_CIRCLE_RADIUS * 1.2) {
-                this.held = false;
-            }
-        }
-        if (this.held && mouse.up) {
-            // Check if released at end
-            if (now >= this.endTime - 200 && now <= this.endTime + 200) {
-                const ex = this.end.x * canvas.width / GAME_WIDTH;
-                const ey = this.end.y * canvas.height / GAME_HEIGHT;
-                const dist = Math.hypot(mouse.x - ex, mouse.y - ey);
-                if (dist < HIT_CIRCLE_RADIUS * canvas.width / GAME_WIDTH) {
-                    this.completed = true;
-                    this.held = false;
-                    score += 300;
-                }
-            } else {
-                this.held = false;
-            }
-        }
-    }
-
-    draw(ctx, now) {
-        if (now < this.startTime - 1000 || now > this.endTime + 200) return;
-        // Approach circle
-        if (now < this.startTime) {
-            let approach = Math.max(1, 2.5 - (this.startTime - now) / 800);
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(this.start.x * canvas.width / GAME_WIDTH, this.start.y * canvas.height / GAME_HEIGHT, HIT_CIRCLE_RADIUS * approach * canvas.width / GAME_WIDTH, 0, 2 * Math.PI);
-            ctx.lineWidth = 4;
-            ctx.strokeStyle = '#66ccff';
-            ctx.globalAlpha = 0.7 * approach;
-            ctx.stroke();
-            ctx.restore();
-        }
-        // Start circle (always visible)
-        ctx.save();
-        ctx.globalAlpha = 1;
-        ctx.beginPath();
-        ctx.arc(this.start.x * canvas.width / GAME_WIDTH, this.start.y * canvas.height / GAME_HEIGHT, HIT_CIRCLE_RADIUS * canvas.width / GAME_WIDTH, 0, 2 * Math.PI);
-        ctx.fillStyle = this.held && now >= this.startTime && now <= this.endTime ? '#66ff66' : '#ff66aa';
-        ctx.fill();
-        ctx.lineWidth = 6;
-        ctx.strokeStyle = '#fff';
-        ctx.stroke();
-        ctx.restore();
-        // Slider line and end circle while active
-        if (!this.completed && now >= this.startTime && now <= this.endTime) {
-            // Slider line
-            ctx.save();
-            ctx.globalAlpha = 0.7;
-            ctx.strokeStyle = this.held ? '#00cc88' : '#66ccff';
-            ctx.lineWidth = 10;
-            ctx.beginPath();
-            ctx.moveTo(this.start.x * canvas.width / GAME_WIDTH, this.start.y * canvas.height / GAME_HEIGHT);
-            ctx.lineTo(this.end.x * canvas.width / GAME_WIDTH, this.end.y * canvas.height / GAME_HEIGHT);
-            ctx.stroke();
-            ctx.restore();
-            // End circle
-            ctx.save();
-            ctx.globalAlpha = 1;
-            ctx.beginPath();
-            ctx.arc(this.end.x * canvas.width / GAME_WIDTH, this.end.y * canvas.height / GAME_HEIGHT, HIT_CIRCLE_RADIUS * canvas.width / GAME_WIDTH, 0, 2 * Math.PI);
-            ctx.fillStyle = '#3388ff';
-            ctx.fill();
-            ctx.lineWidth = 6;
-            ctx.strokeStyle = '#fff';
-            ctx.stroke();
-            ctx.restore();
-            // Moving slider ball
-            // FIX: Ball should move from start to end, not just keep going out
-            let t = (now - this.startTime) / (this.endTime - this.startTime);
-            t = Math.max(0, Math.min(1, t)); // Clamp t between 0 and 1
-            if (this.held && now >= this.startTime && now <= this.endTime) {
-                const bx = this.start.x + (this.end.x - this.start.x) * t;
-                const by = this.start.y + (this.end.y - this.start.y) * t;
-                ctx.save();
-                ctx.globalAlpha = 1;
-                ctx.beginPath();
-                ctx.arc(bx * canvas.width / GAME_WIDTH, by * canvas.height / GAME_HEIGHT, HIT_CIRCLE_RADIUS * 0.7 * canvas.width / GAME_WIDTH, 0, 2 * Math.PI);
-                ctx.fillStyle = '#fff700';
-                ctx.fill();
-                ctx.lineWidth = 3;
-                ctx.strokeStyle = '#ff8800';
-                ctx.stroke();
-                ctx.restore();
-            }
-        }
-    }
-}
-
-// Replace old sliderNotes with Slider objects
-let sliderNotes = [];
-
-function randomizeSliderNotes(count = 1, speed = 2000) {
-    sliderNotes = [];
-    let lastEnd = 1500;
-    for (let i = 0; i < count; i++) {
-        const delay = 400 + Math.floor(Math.random() * 500);
-        const t = lastEnd + delay;
-        const start = {
-            x: Math.floor(Math.random() * (GAME_WIDTH - 2 * HIT_CIRCLE_RADIUS) + HIT_CIRCLE_RADIUS),
-            y: Math.floor(Math.random() * (GAME_HEIGHT - 2 * HIT_CIRCLE_RADIUS) + HIT_CIRCLE_RADIUS)
-        };
-        let end;
-        do {
-            end = {
-                x: Math.floor(Math.random() * (GAME_WIDTH - 2 * HIT_CIRCLE_RADIUS) + HIT_CIRCLE_RADIUS),
-                y: Math.floor(Math.random() * (GAME_HEIGHT - 2 * HIT_CIRCLE_RADIUS) + HIT_CIRCLE_RADIUS)
-            };
-        } while (Math.hypot(end.x - start.x, end.y - start.y) < 200);
-        sliderNotes.push(new Slider(t, speed, start, end));
-        lastEnd = t + speed;
-    }
-}
-
-// Mouse state for slider interaction
+// Mouse state for hit circle interaction
 const mouse = { x: 0, y: 0, down: false, up: false, move: false };
 canvas.addEventListener('mousedown', e => {
     const rect = canvas.getBoundingClientRect();
@@ -257,6 +127,7 @@ canvas.addEventListener('mousedown', e => {
     mouse.down = true;
     mouse.up = false;
     mouse.move = false;
+    handleHit(mouse.x, mouse.y); // Only handle normal hit circles
 });
 canvas.addEventListener('mousemove', e => {
     const rect = canvas.getBoundingClientRect();
@@ -265,19 +136,43 @@ canvas.addEventListener('mousemove', e => {
     mouse.move = true;
 });
 canvas.addEventListener('mouseup', e => {
-    const rect = canvas.getBoundingClientRect();
-    mouse.x = e.clientX - rect.left;
-    mouse.y = e.clientY - rect.top;
     mouse.up = true;
     mouse.down = false;
     mouse.move = false;
 });
 
 // --- Restore normal hit circle event handling ---
-canvas.addEventListener('mousedown', e => {
+canvas.addEventListener('touchstart', e => {
     const rect = canvas.getBoundingClientRect();
-    handleHit(e.clientX - rect.left, e.clientY - rect.top);
+    for (let touch of e.touches) {
+        handleHit(touch.clientX - rect.left, touch.clientY - rect.top);
+    }
 });
+canvas.addEventListener('touchmove', e => {
+    const rect = canvas.getBoundingClientRect();
+    for (let touch of e.touches) {
+    }
+});
+canvas.addEventListener('touchend', e => {
+    const rect = canvas.getBoundingClientRect();
+    for (let touch of e.changedTouches) {
+    }
+});
+
+// On game start, randomize only normal circles and play music
+startBtn.onclick = () => {
+    menu.style.display = 'none';
+    canvas.style.display = '';
+    resizeCanvas();
+    score = 0;
+    currentIndex = 0;
+    running = true;
+    startTime = performance.now();
+    randomizeBeatmap();
+    music.currentTime = 0;
+    music.play(); // Start the song
+    requestAnimationFrame(gameLoop);
+};
 
 function gameLoop() {
     if (!running) return;
@@ -285,17 +180,7 @@ function gameLoop() {
     drawScore();
     const now = getNow();
     let foundActive = false;
-    // Draw slider notes
-    if (sliderNotes.length > 0) {
-        drawSliderNotes(now);
-        for (let i = 0; i < sliderNotes.length; i++) {
-            const note = sliderNotes[i];
-            if (note.completed) continue;
-            if (now > note.endTime + 200) continue;
-            foundActive = true;
-        }
-    }
-    // Draw normal hit circles
+    // Draw normal hit circles only
     for (let i = currentIndex; i < beatmap.length; i++) {
         const obj = beatmap[i];
         const dt = obj.time - now;
@@ -309,9 +194,9 @@ function gameLoop() {
         drawCircle(obj, alpha, approach);
         foundActive = true;
     }
-    if ((currentIndex >= beatmap.length && sliderNotes.every(n => n.completed)) || !foundActive) {
+    if (currentIndex >= beatmap.length || !foundActive) {
         running = false;
-        music.pause();
+        music.pause(); // Stop the song when game ends
         setTimeout(() => {
             menu.style.display = '';
             canvas.style.display = 'none';
@@ -321,6 +206,18 @@ function gameLoop() {
     }
     requestAnimationFrame(gameLoop);
 }
+
+// Initial setup
+resizeCanvas();
+window.addEventListener('DOMContentLoaded', () => {
+    const volumeSlider = document.getElementById('volumeSlider');
+    if (volumeSlider) {
+        volumeSlider.addEventListener('input', function () {
+            music.volume = parseFloat(this.value);
+        });
+        music.volume = parseFloat(volumeSlider.value);
+    }
+});
 
 function handleHit(x, y) {
     if (!running) return;
@@ -339,62 +236,4 @@ function handleHit(x, y) {
             beatmap.splice(currentIndex, 1);
         }
     }
-}
-
-// Remove duplicate/old slider event handlers
-// Only use the new Slider class and mouse state for slider interaction
-// Remove these lines:
-// canvas.addEventListener('mousedown', ... handleSliderDown ...);
-// canvas.addEventListener('mousemove', ... handleSliderMove ...);
-// canvas.addEventListener('mouseup', ... handleSliderUp ...);
-// canvas.addEventListener('touchstart', ... handleSliderDown ...);
-// canvas.addEventListener('touchmove', ... handleSliderMove ...);
-// canvas.addEventListener('touchend', ... handleSliderUp ...);
-
-canvas.addEventListener('touchstart', e => {
-    const rect = canvas.getBoundingClientRect();
-    for (let touch of e.touches) {
-        handleHit(touch.clientX - rect.left, touch.clientY - rect.top);
-    }
-});
-canvas.addEventListener('touchmove', e => {
-    const rect = canvas.getBoundingClientRect();
-    for (let touch of e.touches) {
-    }
-});
-canvas.addEventListener('touchend', e => {
-    const rect = canvas.getBoundingClientRect();
-    for (let touch of e.changedTouches) {
-    }
-});
-
-// On game start, randomize both normal circles and slider notes
-startBtn.onclick = () => {
-    menu.style.display = 'none';
-    canvas.style.display = '';
-    resizeCanvas();
-    score = 0;
-    currentIndex = 0;
-    running = true;
-    startTime = performance.now();
-    music.currentTime = 0;
-    randomizeBeatmap();
-    randomizeSliderNotes(2, 2000); // You can adjust number and speed here
-    requestAnimationFrame(gameLoop);
-};
-
-// Initial setup
-resizeCanvas();
-window.addEventListener('DOMContentLoaded', () => {
-    setupSliderConfigUI();
-});
-
-function drawSliderNotes(now) {
-    for (const slider of sliderNotes) {
-        slider.update(now, mouse);
-        slider.draw(ctx, now);
-    }
-    // Reset mouse up/move after processing
-    mouse.up = false;
-    mouse.move = false;
 }

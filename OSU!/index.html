@@ -12,6 +12,10 @@
         <button id="startBtn">Start Game</button>
     </div>
     <canvas id="gameCanvas" width="800" height="600" style="display:none;"></canvas>
+    <div id="volumeContainer" style="position:fixed;top:16px;right:32px;z-index:10;">
+        <label for="volumeSlider" style="color:white;">Volume:</label>
+        <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
+    </div>
     <audio id="music" src="assets/sample.mp3"></audio>
     <script src="main.js"></script>
 </body>
