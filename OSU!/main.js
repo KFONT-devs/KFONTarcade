@@ -183,9 +183,80 @@ startBtn.onclick = () => {
     requestAnimationFrame(gameLoop);
 };
 
+// Pause menu logic
+let paused = false;
+let pauseMenu = null;
+
+function showPauseMenu() {
+    if (!pauseMenu) {
+        pauseMenu = document.createElement('div');
+        pauseMenu.id = 'pauseMenu';
+        pauseMenu.style.position = 'fixed';
+        pauseMenu.style.top = '50%';
+        pauseMenu.style.left = '50%';
+        pauseMenu.style.transform = 'translate(-50%, -50%)';
+        pauseMenu.style.background = 'rgba(0,0,0,0.9)';
+        pauseMenu.style.color = '#fff';
+        pauseMenu.style.padding = '40px 60px';
+        pauseMenu.style.borderRadius = '20px';
+        pauseMenu.style.fontSize = '2em';
+        pauseMenu.style.zIndex = 2000;
+        pauseMenu.style.textAlign = 'center';
+        pauseMenu.innerHTML = `
+            <div style="margin-bottom:30px;">Paused</div>
+            <button id="pauseContinue" style="font-size:1em;padding:10px 30px;margin:10px;">Continue</button><br>
+            <button id="pauseRestart" style="font-size:1em;padding:10px 30px;margin:10px;">Restart</button><br>
+            <button id="pauseExit" style="font-size:1em;padding:10px 30px;margin:10px;">Exit</button>
+        `;
+        document.body.appendChild(pauseMenu);
+    }
+    pauseMenu.style.display = '';
+    paused = true;
+    music.pause();
+
+    document.getElementById('pauseContinue').onclick = () => {
+        pauseMenu.style.display = 'none';
+        paused = false;
+        if (running) {
+            music.play();
+            requestAnimationFrame(gameLoop);
+        }
+    };
+    document.getElementById('pauseRestart').onclick = () => {
+        pauseMenu.style.display = 'none';
+        paused = false;
+        // Restart game logic
+        score = 0;
+        combo = 0;
+        maxCombo = 0;
+        currentIndex = 0;
+        running = true;
+        startTime = performance.now();
+        randomizeBeatmap();
+        music.currentTime = 0;
+        music.play();
+        requestAnimationFrame(gameLoop);
+    };
+    document.getElementById('pauseExit').onclick = () => {
+        pauseMenu.style.display = 'none';
+        paused = false;
+        running = false;
+        music.pause();
+        menu.style.display = '';
+        canvas.style.display = 'none';
+    };
+}
+
+// Listen for ESC key to pause
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && running && !paused) {
+        showPauseMenu();
+    }
+});
+
 // Update gameLoop to use showScoreboard
 function gameLoop() {
-    if (!running) return;
+    if (!running || paused) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawScore();
     const now = getNow();
