@@ -10,8 +10,11 @@ let firstClick = true; // Track if it's the first click
 
 // Initialize the game
 function initGame() {
-    document.getElementById('win-message').style.display = 'none'; // Hide win popup
-    document.getElementById('game-over-message').style.display = 'none'; // Also hide game over popup just in case
+    document.getElementById('win-message').style.display = 'none';
+    document.getElementById('win-message').style.pointerEvents = 'none';
+    document.getElementById('game-over-message').style.display = 'none';
+    document.getElementById('game-over-message').style.pointerEvents = 'none';
+    document.getElementById('game-board').classList.remove('blur');
     board = createBoard();
     placeMines();
     calculateNumbers();
@@ -188,21 +191,10 @@ function checkWinCondition() {
 function triggerWinAnimation() {
     const gameBoard = document.getElementById('game-board');
     gameBoard.classList.add('blur');
-
     setTimeout(() => {
-        document.getElementById('win-message').style.display = 'block';
-        // Add click handler for PLAY AGAIN
-        const playAgain = document.getElementById('play-again');
-        if (playAgain) {
-            playAgain.onclick = function() {
-                document.getElementById('win-message').style.display = 'none';
-                gameBoard.classList.remove('blur');
-                firstClick = true;
-                revealedCount = 0;
-                gameOver = false;
-                initGame();
-            };
-        }
+        const winMsg = document.getElementById('win-message');
+        winMsg.style.display = 'block';
+        winMsg.style.pointerEvents = 'auto';
     }, 600);
 }
 
@@ -226,30 +218,25 @@ initGame();
 function triggerGameOverAnimation() {
     const gameBoard = document.getElementById('game-board');
     gameBoard.classList.add('blur');
-
     const cells = document.querySelectorAll('.cell');
     cells.forEach((cell, i) => {
         setTimeout(() => {
             cell.classList.add('fall');
         }, Math.random() * 400);
     });
-
     setTimeout(() => {
         const gameOverMsg = document.getElementById('game-over-message');
         gameOverMsg.style.display = 'block';
-
-        // Make sure to set pointer-events so the button is clickable
         gameOverMsg.style.pointerEvents = 'auto';
-
         const insertCoin = document.getElementById('insert-coin');
         if (insertCoin) {
             insertCoin.onclick = function () {
                 gameOverMsg.style.display = 'none';
+                gameOverMsg.style.pointerEvents = 'none';
                 gameBoard.classList.remove('blur');
                 firstClick = true;
                 revealedCount = 0;
                 gameOver = false;
-                // Remove all .fall classes from cells for next game
                 document.querySelectorAll('.cell.fall').forEach(cell => cell.classList.remove('fall'));
                 initGame();
             };
