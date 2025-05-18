@@ -166,8 +166,32 @@ function randomizeBeatmap() {
                 }
             }
 
+            // Don't allow new beat to be too close to any previous line (avoid overlap with lines)
+            if (valid && lastPositions.length >= 2) {
+                for (let j = 0; j < lastPositions.length - 1; j++) {
+                    const a = lastPositions[j];
+                    const b = lastPositions[j + 1];
+                    // Distance from (x, y) to line segment ab
+                    const dx = b.x - a.x;
+                    const dy = b.y - a.y;
+                    const lengthSq = dx * dx + dy * dy;
+                    let t = 0;
+                    if (lengthSq > 0) {
+                        t = ((x - a.x) * dx + (y - a.y) * dy) / lengthSq;
+                        t = Math.max(0, Math.min(1, t));
+                    }
+                    const projX = a.x + t * dx;
+                    const projY = a.y + t * dy;
+                    const distToLine = Math.hypot(x - projX, y - projY);
+                    if (distToLine < HIT_CIRCLE_RADIUS * 1.5) { // 1.5x radius buffer from line
+                        valid = false;
+                        break;
+                    }
+                }
+            }
+
             attempts++;
-            if (attempts > 100) break;
+            if (attempts > 200) break; // Prevent infinite loop
         } while (!valid);
 
         beatmap.push({
