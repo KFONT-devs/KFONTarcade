@@ -46,6 +46,9 @@ let currentIndex = 0;
 let score = 0;
 let running = false;
 
+let combo = 0;
+let maxCombo = 0;
+
 function resizeCanvas() {
     // Responsive canvas
     const ratio = GAME_WIDTH / GAME_HEIGHT;
@@ -100,12 +103,18 @@ function drawCircle(circle, alpha = 1, approach = 1) {
     ctx.restore();
 }
 
+// Update drawScore to also draw combo in the top left corner
 function drawScore() {
     ctx.save();
     ctx.font = `${Math.floor(canvas.height/15)}px Arial`;
     ctx.fillStyle = '#fff';
     ctx.textAlign = 'left';
     ctx.fillText(`Score: ${score}`, 20, 40);
+
+    // Draw combo below score
+    ctx.font = `${Math.floor(canvas.height/22)}px Arial`;
+    ctx.fillStyle = '#ff0';
+    ctx.fillText(`Combo: ${combo}`, 20, 75);
     ctx.restore();
 }
 
@@ -174,6 +183,7 @@ startBtn.onclick = () => {
     requestAnimationFrame(gameLoop);
 };
 
+// Update gameLoop to use showScoreboard
 function gameLoop() {
     if (!running) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -186,6 +196,7 @@ function gameLoop() {
         const dt = obj.time - now;
         if (dt < -HIT_WINDOW) {
             currentIndex++;
+            combo = 0; // Reset combo on miss
             continue;
         }
         if (dt > 2000) break;
@@ -198,9 +209,7 @@ function gameLoop() {
         running = false;
         music.pause(); // Stop the song when game ends
         setTimeout(() => {
-            menu.style.display = '';
-            canvas.style.display = 'none';
-            alert(`Game Over! Your score: ${score}`);
+            showScoreboard();
         }, 100);
         return;
     }
@@ -219,6 +228,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// Update handleHit to manage combo
 function handleHit(x, y) {
     if (!running) return;
     const now = getNow();
@@ -233,7 +243,47 @@ function handleHit(x, y) {
         const dist = Math.hypot(x - cx, y - cy);
         if (dist < HIT_CIRCLE_RADIUS * canvas.width / GAME_WIDTH) {
             score += 300 - Math.floor(Math.abs(dt));
+            combo++;
+            if (combo > maxCombo) maxCombo = combo;
             beatmap.splice(currentIndex, 1);
+        } else {
+            combo = 0;
         }
+    } else {
+        combo = 0;
     }
+}
+
+// Show scoreboard at the end
+function showScoreboard() {
+    // Create or update a scoreboard div
+    let scoreboard = document.getElementById('scoreboard');
+    if (!scoreboard) {
+        scoreboard = document.createElement('div');
+        scoreboard.id = 'scoreboard';
+        scoreboard.style.position = 'fixed';
+        scoreboard.style.top = '50%';
+        scoreboard.style.left = '50%';
+        scoreboard.style.transform = 'translate(-50%, -50%)';
+        scoreboard.style.background = 'rgba(0,0,0,0.85)';
+        scoreboard.style.color = '#fff';
+        scoreboard.style.padding = '40px 60px';
+        scoreboard.style.borderRadius = '20px';
+        scoreboard.style.fontSize = '2em';
+        scoreboard.style.zIndex = 1000;
+        scoreboard.style.textAlign = 'center';
+        document.body.appendChild(scoreboard);
+    }
+    scoreboard.innerHTML = `
+        <div>Game Over!</div>
+        <div style="margin-top:20px;">Score: <b>${score}</b></div>
+        <div>Max Combo: <b>${maxCombo}</b></div>
+        <button id="closeScoreboard" style="margin-top:30px;font-size:1em;padding:10px 30px;">Close</button>
+    `;
+    scoreboard.style.display = '';
+    document.getElementById('closeScoreboard').onclick = () => {
+        scoreboard.style.display = 'none';
+        menu.style.display = '';
+        canvas.style.display = 'none';
+    };
 }
