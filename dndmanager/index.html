@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>D&D 5e Character Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>D&D 5e Character Manager</h1>
+  <input type="file" id="json-upload" accept="application/json">
+  <div class="sheet-container">
+    <div class="sheet-row"><label for="charName">Name</label><input id="charName" type="text" /></div>
+    <div class="sheet-row"><label for="charClass">Class & Level</label><input id="charClass" type="text" /></div>
+    <div class="sheet-row"><label for="charRace">Race</label><input id="charRace" type="text" /></div>
+    <div class="sheet-row"><label for="charBackground">Background</label><input id="charBackground" type="text" /></div>
+    <table class="ability-table">
+      <thead><tr><th>Ability</th><th>Score</th><th>Modifier</th></tr></thead>
+      <tbody>
+        <tr><td>STR</td><td><input id="str" type="number" min="1" max="30" value="10"></td><td id="strMod">0</td></tr>
+        <tr><td>DEX</td><td><input id="dex" type="number" min="1" max="30" value="10"></td><td id="dexMod">0</td></tr>
+        <tr><td>CON</td><td><input id="con" type="number" min="1" max="30" value="10"></td><td id="conMod">0</td></tr>
+        <tr><td>INT</td><td><input id="int" type="number" min="1" max="30" value="10"></td><td id="intMod">0</td></tr>
+        <tr><td>WIS</td><td><input id="wis" type="number" min="1" max="30" value="10"></td><td id="wisMod">0</td></tr>
+        <tr><td>CHA</td><td><input id="cha" type="number" min="1" max="30" value="10"></td><td id="chaMod">0</td></tr>
+      </tbody>
+    </table>
+    <div class="sheet-row"><label for="profBonus">Proficiency Bonus</label><input id="profBonus" type="number" readonly></div>
+    <div class="sheet-row"><label for="passivePerception">Passive Perception</label><input id="passivePerception" type="number" readonly></div>
+    <div class="sheet-row"><label for="notes">Notes</label><input id="notes" type="text" /></div>
+    <div class="sheet-row" style="flex-direction:column;align-items:flex-start;">
+      <label>Spells</label>
+      <div id="spells-list"></div>
+      <button id="add-spell-btn" type="button" style="margin-top:0.5em;">+ Add Spell</button>
+    </div>
+    <div class="sheet-actions">
+      <button id="saveBtn">Save</button>
+      <button id="loadBtn">Load</button>
+      <button id="exportBtn">Export JSON</button>
+      <button id="clearBtn">Clear</button>
+    </div>
+  </div>
+</body>
+</html>

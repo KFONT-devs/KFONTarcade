@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PDF to JSON Converter</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f4f9; padding: 2em; text-align: center; }
+    h1 { color: #4a90e2; }
+    #result { background: #222; color: #b9f; padding: 1em; border-radius: 8px; max-width: 800px; margin: 2em auto; min-height: 100px; text-align: left; white-space: pre-wrap; font-size: 1em; }
+    button { background: #4a90e2; color: #fff; border: none; border-radius: 6px; padding: 0.7em 2em; font-size: 1.1em; cursor: pointer; margin: 1em 0; }
+    button:hover { background: #357ab8; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
+</head>
+<body>
+  <h1>PDF to JSON Converter</h1>
+  <input type="file" id="pdf-upload" accept="application/pdf">
+  <button id="download-json" style="display:none;">Download JSON</button>
+  <div id="result"></div>
+  <script>
+    let lastJson = null;
+    document.getElementById('pdf-upload').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const arrayBuffer = await file.arrayBuffer();
+      const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+      const form = pdfDoc.getForm();
+      const fields = form.getFields();
+      const data = {};
+      fields.forEach(field => {
+        const name = field.getName();
+        let value = "";
+        try { value = field.getText ? field.getText() : field.getValue(); } catch {}
+        data[name] = value;
+      });
+      lastJson = data;
+      document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+      document.getElementById('download-json').style.display = "inline-block";
+    });
+
+    document.getElementById('download-json').onclick = function() {
+      if (!lastJson) return;
+      const blob = new Blob([JSON.stringify(lastJson, null, 2)], {type: "application/json"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "character.json";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    };
+  </script>
+</body>
+</html>

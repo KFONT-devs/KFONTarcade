@@ -1,0 +1,130 @@
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: linear-gradient(135deg, #e0e7ff 0%, #f4f4f9 100%);
+  margin: 0;
+  padding: 2em;
+  text-align: center;
+}
+
+h1 {
+  color: #4a90e2;
+  margin-bottom: 1em;
+  letter-spacing: 1px;
+}
+
+#pdf-upload, #search {
+  margin: 1em 0.5em;
+  padding: 0.5em;
+  font-size: 1em;
+  border-radius: 6px;
+  border: 1px solid #4a90e2;
+}
+
+input[type="file"] {
+  margin: 1em 0;
+  padding: 0.5em;
+  font-size: 1em;
+  border-radius: 6px;
+  border: 1px solid #4a90e2;
+  background: #fff;
+}
+
+.sheet-container {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px #0002;
+  max-width: 600px;
+  margin: 2em auto;
+  padding: 2em 2em 1em 2em;
+  text-align: left;
+}
+
+.sheet-row {
+  display: flex;
+  gap: 1em;
+  margin-bottom: 1em;
+  align-items: center;
+}
+
+.sheet-row label {
+  flex: 1;
+  font-weight: bold;
+  color: #333;
+}
+
+.sheet-row input {
+  flex: 2;
+  padding: 0.5em;
+  border-radius: 6px;
+  border: 1px solid #4a90e2;
+  font-size: 1em;
+  background: #f8faff;
+}
+
+.ability-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1em;
+  background: #f8faff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ability-table th, .ability-table td {
+  border: 1px solid #4a90e2;
+  padding: 0.5em;
+  text-align: center;
+}
+
+.ability-table th {
+  background: #e0e7ff;
+  color: #333;
+}
+
+.sheet-actions {
+  text-align: center;
+  margin-top: 1.5em;
+}
+
+.sheet-actions button {
+  background: #4a90e2;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.7em 2em;
+  font-size: 1.1em;
+  cursor: pointer;
+  margin: 0 0.5em;
+  transition: background 0.2s;
+  box-shadow: 0 2px 8px #0001;
+}
+
+.sheet-actions button:hover {
+  background: #357ab8;
+}
+
+.spell-entry input {
+  border: 1px solid #4a90e2;
+  border-radius: 4px;
+  padding: 0.3em;
+  margin-right: 0.5em;
+}
+
+.spell-entry button {
+  background: #e74c3c;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.3em 1em;
+  cursor: pointer;
+}
+
+.spell-entry button:hover {
+  background: #c0392b;
+}
+
+@media (max-width: 700px) {
+  .sheet-container { padding: 1em; }
+  .sheet-row { flex-direction: column; }
+  .sheet-row label, .sheet-row input { flex: unset; width: 100%; }
+}
