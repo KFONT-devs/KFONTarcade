@@ -1,8 +1,8 @@
 // This file contains the JavaScript functionality for the Minesweeper game.
 
-const rows = 10; // Number of rows in the game
-const cols = 10; // Number of columns in the game
-const minesCount = 15; // Number of mines in the game
+let rows = 10;
+let cols = 10;
+let minesCount = 15; // Number of mines in the game
 let board = []; // Game board
 let revealedCount = 0; // Count of revealed cells
 let gameOver = false; // Game over flag
@@ -254,3 +254,27 @@ function triggerGameOverAnimation() {
         }
     }, 900);
 }
+
+function getSettingsAndStart() {
+    const rowsInput = document.getElementById('rows-input');
+    const colsInput = document.getElementById('cols-input');
+    const minesInput = document.getElementById('mines-input');
+    rows = Math.max(5, Math.min(30, parseInt(rowsInput.value, 10) || 10));
+    cols = Math.max(5, Math.min(30, parseInt(colsInput.value, 10) || 10));
+    // Limit mines to at most rows*cols-1
+    const maxMines = rows * cols - 1;
+    minesCount = Math.max(1, Math.min(maxMines, parseInt(minesInput.value, 10) || 10));
+    minesInput.max = maxMines; // update max for user
+    initGame();
+}
+
+// Listen for start button
+document.getElementById('start-btn').addEventListener('click', getSettingsAndStart);
+
+// Optionally, start a new game if settings are changed
+['rows-input', 'cols-input', 'mines-input'].forEach(id => {
+    document.getElementById(id).addEventListener('change', getSettingsAndStart);
+});
+
+// Initialize the game on page load
+window.addEventListener('DOMContentLoaded', getSettingsAndStart);

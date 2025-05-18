@@ -195,3 +195,61 @@ h1, h2, h3 {
     cursor: pointer;
     transform: scale(1.08) rotate(-2deg);
 }
+
+#controls {
+    margin-bottom: 16px;
+    text-align: center;
+    font-family: 'Press Start 2P', monospace;
+    color: #00eaff;
+    letter-spacing: 1px;
+    user-select: none;
+}
+
+#controls label {
+    margin: 0 12px;
+    font-size: 1rem;
+}
+
+#controls input[type="number"] {
+    width: 60px;
+    padding: 6px 4px;
+    margin-left: 4px;
+    margin-right: 8px;
+    border: 2px solid #00eaff;
+    border-radius: 4px;
+    background: #181028;
+    color: #39ff14;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 1rem;
+    outline: none;
+    box-shadow: 0 0 8px #00eaff inset;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#controls input[type="number"]:focus {
+    border-color: #ff0080;
+    box-shadow: 0 0 12px #ff0080, 0 0 8px #00eaff inset;
+    color: #fffb00;
+}
+
+#start-btn {
+    background: #181028;
+    color: #ff0080;
+    border: 2px solid #ff0080;
+    border-radius: 4px;
+    padding: 8px 18px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 1rem;
+    margin-left: 12px;
+    box-shadow: 0 0 8px #ff0080;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.1s;
+}
+
+#start-btn:hover {
+    background: #ff0080;
+    color: #181028;
+    border-color: #00eaff;
+    box-shadow: 0 0 16px #00eaff, 0 0 8px #ff0080 inset;
+    transform: scale(1.05) rotate(-2deg);
+}
